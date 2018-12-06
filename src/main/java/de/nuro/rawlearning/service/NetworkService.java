@@ -1,6 +1,7 @@
 package de.nuro.rawlearning.service;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -18,6 +19,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+import org.springframework.stereotype.Service;
 
 /**
  * A Simple Multi Layered Perceptron (MLP) applied to digit classification for
@@ -37,72 +39,81 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
  * add up to 1. The highest of these normalized values is picked as the predicted class.
  *
  */
+@Service
 public class NetworkService {
 
-    private MultiLayerNetwork model;
+    private static File file = new File("C:/tmp/nuro/network");
 
-    public NetworkService() throws Exception {
+    public void init() {
 
-        //number of rows and columns in the input pictures
-        final int numRows = 28;
-        final int numColumns = 28;
-        int outputNum = 10; // number of output classes
-        int batchSize = 128; // batch size for each epoch
-        int rngSeed = 123; // random number seed for reproducibility
-        int numEpochs = 15; // number of epochs to perform
+        try {
+            //number of rows and columns in the input pictures
+            final int numRows = 28;
+            final int numColumns = 28;
+            int outputNum = 10; // number of output classes
+            int batchSize = 128; // batch size for each epoch
+            int rngSeed = 123; // random number seed for reproducibility
+            int numEpochs = 15; // number of epochs to perform
 
-        //Get the DataSetIterators:
-        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, rngSeed);
-        DataSetIterator mnistTest = new MnistDataSetIterator(batchSize, false, rngSeed);
+            //Get the DataSetIterators:
+            DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, rngSeed);
+            DataSetIterator mnistTest = new MnistDataSetIterator(batchSize, false, rngSeed);
 
-        System.out.println("Build model....");
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-            .seed(rngSeed) //include a random seed for reproducibility
-            // use stochastic gradient descent as an optimization algorithm
-            .updater(new Nesterovs(0.006, 0.9))
-            .l2(1e-4)
-            .list()
-            .layer(0, new DenseLayer.Builder() //create the first, input layer with xavier initialization
-                .nIn(numRows * numColumns)
-                .nOut(1000)
-                .activation(Activation.RELU)
-                .weightInit(WeightInit.XAVIER)
-                .build())
-            .layer(1, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD) //create hidden layer
-                .nIn(1000)
-                .nOut(outputNum)
-                .activation(Activation.SOFTMAX)
-                .weightInit(WeightInit.XAVIER)
-                .build())
-            .pretrain(false).backprop(true) //use backpropagation to adjust weights
-            .build();
+            System.out.println("Build model....");
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(rngSeed) //include a random seed for reproducibility
+                // use stochastic gradient descent as an optimization algorithm
+                .updater(new Nesterovs(0.006, 0.9))
+                .l2(1e-4)
+                .list()
+                .layer(0, new DenseLayer.Builder() //create the first, input layer with xavier initialization
+                    .nIn(numRows * numColumns)
+                    .nOut(1000)
+                    .activation(Activation.RELU)
+                    .weightInit(WeightInit.XAVIER)
+                    .build())
+                .layer(1, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD) //create hidden layer
+                    .nIn(1000)
+                    .nOut(outputNum)
+                    .activation(Activation.SOFTMAX)
+                    .weightInit(WeightInit.XAVIER)
+                    .build())
+                .pretrain(false).backprop(true) //use backpropagation to adjust weights
+                .build();
 
-        model = new MultiLayerNetwork(conf);
-        model.init();
-        //print the score with every 1 iteration
-        model.setListeners(new ScoreIterationListener(1));
+            MultiLayerNetwork model = new MultiLayerNetwork(conf);
+            model.init();
+            //print the score with every 1 iteration
+            model.setListeners(new ScoreIterationListener(1));
 
-        System.out.println("Train model....");
-        for (int i = 0; i < numEpochs; i++) {
-            model.fit(mnistTrain);
+            System.out.println("Train model....");
+            for (int i = 0; i < numEpochs; i++) {
+                model.fit(mnistTrain);
+            }
+
+            File myModel = new File(System.getProperty("user.home"), "MNIST/my_model.mln");
+            model = MultiLayerNetwork.load(myModel, true);
+
+            System.out.println("Evaluate model....");
+            Evaluation eval = new Evaluation(outputNum); //create an evaluation object with 10 possible classes
+            while (mnistTest.hasNext()) {
+                DataSet next = mnistTest.next();
+                INDArray output = model.output(next.getFeatures()); //get the networks prediction
+                eval.eval(next.getLabels(), output); //check the prediction against the true class
+            }
+
+            System.out.println(eval.stats());
+            System.out.println("****************Example finished********************");
+
+            model.save(file, false);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
-        File myModel = new File(System.getProperty("user.home"), "MNIST/my_model.mln");
-        model = MultiLayerNetwork.load(myModel, true);
-
-        System.out.println("Evaluate model....");
-        Evaluation eval = new Evaluation(outputNum); //create an evaluation object with 10 possible classes
-        while (mnistTest.hasNext()) {
-            DataSet next = mnistTest.next();
-            INDArray output = model.output(next.getFeatures()); //get the networks prediction
-            eval.eval(next.getLabels(), output); //check the prediction against the true class
-        }
-
-        System.out.println(eval.stats());
-        System.out.println("****************Example finished********************");
     }
 
-    public void perform(final int[] grayValues) {
+    public void perform(final int[] grayValues) throws IOException {
+
+        MultiLayerNetwork model = MultiLayerNetwork.load(file, false);
 
         NDArray ndArray = new NDArray(grayValues);
         INDArray output = model.output(ndArray);

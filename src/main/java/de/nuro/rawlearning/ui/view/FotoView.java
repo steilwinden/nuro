@@ -3,6 +3,8 @@ package de.nuro.rawlearning.ui.view;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.vaadin.flow.component.Tag;
+import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.HtmlImport;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -23,6 +25,7 @@ import com.vaadin.flow.templatemodel.TemplateModel;
 @HtmlImport("src/view/foto-view.html")
 @Route(value = "foto")
 @RouteAlias(value = "")
+//@Push
 public class FotoView extends PolymerTemplate<FotoView.FotoViewModel> {
 
     private static final long serialVersionUID = 1L;
@@ -35,6 +38,8 @@ public class FotoView extends PolymerTemplate<FotoView.FotoViewModel> {
     private Span zahlSpan;
     @Id("upload")
     private Upload upload;
+    @Id("init")
+    private Button init;
 
     /**
      * This model binds properties between FotoView and foto-view.html
@@ -50,9 +55,22 @@ public class FotoView extends PolymerTemplate<FotoView.FotoViewModel> {
     public FotoView(final FotoPresenter presenter) {
 
         this.presenter = presenter;
-        mainLayout.setFlexGrow(1, zahlSpan);
+        mainLayout.setFlexGrow(2, zahlSpan);
         zahlSpan.setText("Hello World");
+        init.addClickListener(e -> initNetwork());
         presenter.init(this);
+    }
+
+    public void initNetwork() {
+
+        UI ui = UI.getCurrent();
+
+        Thread thread = new Thread(() -> {
+
+            presenter.initNetwork();
+            ui.access(() -> zahlSpan.setText("init Network finished"));
+        });
+        thread.start();
     }
 
     public Upload getUpload() {

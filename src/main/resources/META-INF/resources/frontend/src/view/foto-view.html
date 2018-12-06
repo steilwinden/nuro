@@ -1,0 +1,34 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/vaadin-ordered-layout/src/vaadin-vertical-layout.html">
+<link rel="import" href="../../bower_components/vaadin-upload/src/vaadin-upload.html">
+
+
+
+<dom-module id="foto-view">
+    <template>
+<style include="shared-styles">
+            :host {
+                display: block;
+            }
+        </style>
+<vaadin-vertical-layout id="main-layout" style="width: 100%; height: 100%;">
+ <span id="zahlSpan">Text</span>
+ <vaadin-upload id="upload"></vaadin-upload>
+</vaadin-vertical-layout>
+</template>
+
+    <script>
+        class FotoView extends Polymer.Element {
+            static get is() {
+                return 'foto-view';
+            }
+
+            static get properties() {
+                return {
+                    // Declare your properties here.
+                };
+            }
+        }
+        customElements.define(FotoView.is, FotoView);
+    </script>
+</dom-module>

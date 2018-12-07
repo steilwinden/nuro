@@ -8,6 +8,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dependency.HtmlImport;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.polymertemplate.Id;
 import com.vaadin.flow.component.polymertemplate.PolymerTemplate;
 import com.vaadin.flow.component.upload.Upload;
@@ -25,7 +26,7 @@ import com.vaadin.flow.templatemodel.TemplateModel;
 @HtmlImport("src/view/foto-view.html")
 @Route(value = "foto")
 @RouteAlias(value = "")
-//@Push
+@Push
 public class FotoView extends PolymerTemplate<FotoView.FotoViewModel> {
 
     private static final long serialVersionUID = 1L;

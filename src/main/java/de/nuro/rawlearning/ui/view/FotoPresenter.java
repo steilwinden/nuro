@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.upload.receivers.MultiFileMemoryBuffer;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 
@@ -41,12 +40,9 @@ public class FotoPresenter {
 
         MultiFileMemoryBuffer buffer = new MultiFileMemoryBuffer();
         view.getUpload().setReceiver(buffer);
-//        view.getUpload().setAcceptedFileTypes("image/jpeg", "image/jpg", "image/png", "image/gif");
-        UI.getCurrent().setPollInterval(500);
+        view.getUpload().setAcceptedFileTypes("image/jpeg", "image/jpg");
 
-        System.out.println("here");
         view.getUpload().addSucceededListener(event -> {
-            System.out.println("upload succeeded");
             String attachmentName = event.getFileName();
             String mimeType = event.getMIMEType();
             try {

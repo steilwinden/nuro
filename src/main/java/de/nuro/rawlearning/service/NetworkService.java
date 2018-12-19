@@ -2,7 +2,14 @@ package de.nuro.rawlearning.service;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Random;
 
+import org.datavec.api.io.labels.ParentPathLabelGenerator;
+import org.datavec.api.records.listener.impl.LogRecordListener;
+import org.datavec.api.split.FileSplit;
+import org.datavec.image.loader.NativeImageLoader;
+import org.datavec.image.recordreader.ImageRecordReader;
+import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -42,9 +49,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class NetworkService {
 
-    private static File file = new File("C:/tmp/nuro/network");
+    private static File neuralNetFile = new File("C:/Development/neural_network/my_network");
+    private static String mnistPngFolder = "C:/Development/neural_network/mnist_png";
 
-    public void init() {
+    public void initNeuralNet() {
 
         try {
             //number of rows and columns in the input pictures
@@ -105,7 +113,7 @@ public class NetworkService {
             System.out.println(eval.stats());
             System.out.println("****************Example finished********************");
 
-            model.save(file, false);
+            model.save(neuralNetFile, false);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -113,13 +121,45 @@ public class NetworkService {
 
     public void perform(final int[] grayValues) throws IOException {
 
-        MultiLayerNetwork model = MultiLayerNetwork.load(file, false);
+        MultiLayerNetwork model = MultiLayerNetwork.load(neuralNetFile, false);
 
         NDArray ndArray = new NDArray(grayValues);
         INDArray output = model.output(ndArray);
         System.out.println("RESULT:");
         for (int i = 0; i < 10; i++) {
             System.out.println(i + ": " + output.getDouble(i));
+        }
+    }
+
+    public void imagePipeline() throws IOException {
+
+        int height = 28;
+        int width = 28;
+        int channels = 1;
+        int rngseed = 123;
+        Random randNumGen = new Random(rngseed);
+        int batchSize = 1;
+        int outputNum = 10;
+
+        File trainData = new File(mnistPngFolder + "/training");
+        File testData = new File(mnistPngFolder + "/testing");
+
+        FileSplit train = new FileSplit(trainData, NativeImageLoader.ALLOWED_FORMATS, randNumGen);
+        FileSplit test = new FileSplit(testData, NativeImageLoader.ALLOWED_FORMATS, randNumGen);
+
+        ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
+
+        ImageRecordReader recordReader = new ImageRecordReader(height, width, channels, labelMaker);
+
+        recordReader.initialize(train);
+        recordReader.setListeners(new LogRecordListener());
+
+        DataSetIterator dataIter = new RecordReaderDataSetIterator(recordReader, batchSize, 1, outputNum);
+
+        for (int i = 0; i < 2; i++) {
+            DataSet ds = dataIter.next();
+            System.out.println(ds);
+            System.out.println(dataIter.getLabels());
         }
     }
 

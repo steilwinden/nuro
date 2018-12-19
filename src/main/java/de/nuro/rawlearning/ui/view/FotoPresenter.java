@@ -65,7 +65,7 @@ public class FotoPresenter {
 
     public void initNetwork() {
 
-        networkService.init();
+        networkService.initNeuralNet();
     }
 
 }

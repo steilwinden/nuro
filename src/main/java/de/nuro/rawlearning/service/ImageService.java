@@ -40,7 +40,7 @@ public class ImageService {
             BufferedImage bufferedThumbnail =
                 new BufferedImage(thumbnail.getWidth(null), thumbnail.getHeight(null), BufferedImage.TYPE_INT_RGB);
             bufferedThumbnail.getGraphics().drawImage(thumbnail, 0, 0, null);
-            ImageIO.write(bufferedThumbnail, "jpeg", baos);
+            ImageIO.write(bufferedThumbnail, "png", baos);
             return baos.toByteArray();
         }
     }
@@ -108,23 +108,22 @@ public class ImageService {
         }
     }
 
-    public int[] retrieveGrayValues(final BufferedImage bufferedImage) {
+    public BufferedImage invertAndGrayscale(final BufferedImage image) {
 
-        int[] data = new int[bufferedImage.getWidth() * bufferedImage.getHeight()];
-
-        for (int i = 0; i < bufferedImage.getWidth(); i++) {
-            for (int j = 0; j < bufferedImage.getHeight(); j++) {
-
-                int rgb = bufferedImage.getRGB(i, j);
+        for (int x = 0; x < image.getWidth(); ++x) {
+            for (int y = 0; y < image.getHeight(); ++y) {
+                int rgb = image.getRGB(x, y);
                 int r = rgb >> 16 & 0xFF;
                 int g = rgb >> 8 & 0xFF;
                 int b = rgb & 0xFF;
-                int gray = (r + g + b) / 3;
 
-                data[i * bufferedImage.getWidth() + j] = gray;
+                int grayLevel = (r + g + b) / 3;
+                int gray = (grayLevel << 16) + (grayLevel << 8) + grayLevel;
+                int grayInverted = 255 - gray;
+                image.setRGB(x, y, grayInverted);
             }
         }
 
-        return data;
+        return image;
     }
 }

@@ -10,7 +10,6 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.image.loader.NativeImageLoader;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -24,6 +23,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.springframework.stereotype.Service;
@@ -49,7 +50,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class NetworkService {
 
-    private static File neuralNetFile = new File("C:/Development/neural_network/my_network");
+    private static File neuralNetFile = new File("C:/Development/neural_network/my_network.mln");
     private static String mnistPngFolder = "C:/Development/neural_network/mnist_png";
 
     public void initNeuralNet() {
@@ -64,8 +65,26 @@ public class NetworkService {
             int numEpochs = 15; // number of epochs to perform
 
             //Get the DataSetIterators:
-            DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, rngSeed);
-            DataSetIterator mnistTest = new MnistDataSetIterator(batchSize, false, rngSeed);
+//            DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, rngSeed);
+//            DataSetIterator mnistTest = new MnistDataSetIterator(batchSize, false, rngSeed);
+
+            File trainData = new File(mnistPngFolder + "/training");
+
+            FileSplit train = new FileSplit(trainData, NativeImageLoader.ALLOWED_FORMATS, new Random(rngSeed));
+
+            ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
+
+            ImageRecordReader recordReader = new ImageRecordReader(numColumns, numRows, 1, labelMaker);
+
+            recordReader.initialize(train);
+            recordReader.setListeners(new LogRecordListener());
+
+            DataSetIterator mnistTrain = new RecordReaderDataSetIterator(recordReader, batchSize, 1, outputNum);
+
+            DataNormalization normalizer = new NormalizerStandardize();
+            normalizer.fit(mnistTrain); //Collect training data statistics
+//            mnistTrain.reset();
+            mnistTrain.setPreProcessor(normalizer);
 
             System.out.println("Build model....");
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -98,20 +117,21 @@ public class NetworkService {
             for (int i = 0; i < numEpochs; i++) {
                 model.fit(mnistTrain);
             }
+            System.out.println("...finished");
 
-            File myModel = new File(System.getProperty("user.home"), "MNIST/my_model.mln");
-            model = MultiLayerNetwork.load(myModel, true);
+//            File myModel = new File(System.getProperty("user.home"), "MNIST/my_model.mln");
+//            model = MultiLayerNetwork.load(myModel, true);
 
-            System.out.println("Evaluate model....");
-            Evaluation eval = new Evaluation(outputNum); //create an evaluation object with 10 possible classes
-            while (mnistTest.hasNext()) {
-                DataSet next = mnistTest.next();
-                INDArray output = model.output(next.getFeatures()); //get the networks prediction
-                eval.eval(next.getLabels(), output); //check the prediction against the true class
-            }
-
-            System.out.println(eval.stats());
-            System.out.println("****************Example finished********************");
+//            System.out.println("Evaluate model....");
+//            Evaluation eval = new Evaluation(outputNum); //create an evaluation object with 10 possible classes
+//            while (mnistTest.hasNext()) {
+//                DataSet next = mnistTest.next();
+//                INDArray output = model.output(next.getFeatures()); //get the networks prediction
+//                eval.eval(next.getLabels(), output); //check the prediction against the true class
+//            }
+//
+//            System.out.println(eval.stats());
+//            System.out.println("****************Example finished********************");
 
             model.save(neuralNetFile, false);
         } catch (IOException e) {
@@ -142,10 +162,8 @@ public class NetworkService {
         int outputNum = 10;
 
         File trainData = new File(mnistPngFolder + "/training");
-        File testData = new File(mnistPngFolder + "/testing");
 
         FileSplit train = new FileSplit(trainData, NativeImageLoader.ALLOWED_FORMATS, randNumGen);
-        FileSplit test = new FileSplit(testData, NativeImageLoader.ALLOWED_FORMATS, randNumGen);
 
         ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
 
@@ -161,6 +179,50 @@ public class NetworkService {
             System.out.println(ds);
             System.out.println(dataIter.getLabels());
         }
+    }
+
+    public void createDataSetIterator(final File testingFolder) throws IOException {
+
+        int height = 28;
+        int width = 28;
+        int channels = 1;
+        int rngseed = 123;
+        Random randNumGen = new Random(rngseed);
+        int batchSize = 1;
+        int outputNum = 10;
+
+        FileSplit test = new FileSplit(testingFolder, NativeImageLoader.ALLOWED_FORMATS, randNumGen);
+
+        ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
+
+        ImageRecordReader recordReader = new ImageRecordReader(height, width, channels, labelMaker);
+
+        recordReader.initialize(test);
+        recordReader.setListeners(new LogRecordListener());
+
+        DataSetIterator dataIter = new RecordReaderDataSetIterator(recordReader, batchSize);
+        System.out.println("dataIter: " + dataIter);
+
+//        for (int i = 0; i < 1; i++) {
+//            System.out.println("i: " + i);
+//            DataSet ds = dataIter.next();
+//            System.out.println(ds);
+//            System.out.println("------------------------------------");
+//            System.out.println(dataIter.getLabels());
+//        }
+
+        MultiLayerNetwork model = MultiLayerNetwork.load(neuralNetFile, false);
+
+        System.out.println("Evaluate model....");
+        Evaluation eval = new Evaluation(outputNum); //create an evaluation object with 10 possible classes
+        while (dataIter.hasNext()) {
+            DataSet next = dataIter.next();
+            INDArray output = model.output(next.getFeatures()); //get the networks prediction
+            eval.eval(next.getLabels(), output); //check the prediction against the true class
+        }
+
+        System.out.println(eval.stats());
+        System.out.println("****************Example finished********************");
     }
 
 }

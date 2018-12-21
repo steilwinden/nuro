@@ -2,6 +2,7 @@ package de.nuro.rawlearning.ui.view;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 
 import javax.imageio.ImageIO;
 
@@ -23,6 +24,8 @@ public class FotoPresenter {
     private FotoView view;
     private ImageService imageService;
     private NetworkService networkService;
+
+    private static final String testingFolder = "C:/Development/neural_network/testing";
 
     @Autowired
     public FotoPresenter(final ImageService imageService, final NetworkService networkService) {
@@ -54,9 +57,10 @@ public class FotoPresenter {
                 ByteArrayInputStream bis = new ByteArrayInputStream(bytesRotatedAndResized);
 
                 BufferedImage inputImage = ImageIO.read(bis);
-                int[] grayValues = imageService.retrieveGrayValues(inputImage);
-                networkService.perform(grayValues);
+                BufferedImage grayscaleImage = imageService.invertAndGrayscale(inputImage);
+                ImageIO.write(grayscaleImage, "png", new File(testingFolder + "/foto.png"));
 
+                networkService.createDataSetIterator(new File(testingFolder));
             } catch (Exception e) {
                 e.printStackTrace();
             }

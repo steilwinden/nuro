@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import de.nuro.service.NetworkService;
+
 @RunWith(SpringRunner.class)
 @SpringBootTest
 public class NetworkServiceTest {
@@ -16,9 +18,9 @@ public class NetworkServiceTest {
     private NetworkService networkService;
 
     @Test
-    public void imagePiplineTest() throws IOException {
+    public void guessNumber() throws IOException {
 
-        networkService.imagePipeline();
+        networkService.guessNumber();
     }
 
 }

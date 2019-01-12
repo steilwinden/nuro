@@ -51,16 +51,16 @@ public class FotoPresenter {
 
                 byte[] bytes = IOUtils.toByteArray(buffer.getInputStream(attachmentName));
                 byte[] bytesRotated = imageService.rotateImage(bytes, mimeType);
-//                byte[] bytesRotatedAndResized = imageService.resizeImage(bytesRotated);
-                ByteArrayInputStream bis = new ByteArrayInputStream(bytesRotated);
+                byte[] bytesRotatedAndResized = imageService.resizeImage(bytesRotated);
+                ByteArrayInputStream bis = new ByteArrayInputStream(bytesRotatedAndResized);
 
                 BufferedImage inputImage = ImageIO.read(bis);
-//                BufferedImage grayscaleImage = imageService.invertAndGrayscale(inputImage);
+                BufferedImage bwImage = imageService.toBlackWhiteInverted(inputImage);
                 File tmpFile = new File(NetworkService.TMP_FOLDER + "/foto.png");
-                ImageIO.write(inputImage, "png", tmpFile);
+                ImageIO.write(bwImage, "png", tmpFile);
 
-//                networkService.guessNumber();
-                networkService.simple();
+                int result = networkService.guessNumber();
+                view.getZahlSpan().setText("Ergebnis: "+result);
             } catch (Exception e) {
                 e.printStackTrace();
             }

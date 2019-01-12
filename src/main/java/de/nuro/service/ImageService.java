@@ -108,7 +108,7 @@ public class ImageService {
         }
     }
 
-    public BufferedImage invertAndGrayscale(final BufferedImage image) {
+    public BufferedImage toBlackWhiteInverted(final BufferedImage image) {
 
         for (int x = 0; x < image.getWidth(); ++x) {
             for (int y = 0; y < image.getHeight(); ++y) {
@@ -118,9 +118,10 @@ public class ImageService {
                 int b = rgb & 0xFF;
 
                 int grayLevel = (r + g + b) / 3;
-                int gray = (grayLevel << 16) + (grayLevel << 8) + grayLevel;
-                int grayInverted = 255 - gray;
-                image.setRGB(x, y, grayInverted);
+                int grayLevelInverted = 255 - grayLevel;
+                int blackWhiteLevelInverted = grayLevelInverted < 127 ? 0 : 255;
+                int blackWhiteInverted = (blackWhiteLevelInverted << 16) + (blackWhiteLevelInverted << 8) + blackWhiteLevelInverted;
+                image.setRGB(x, y, blackWhiteInverted);
             }
         }
 

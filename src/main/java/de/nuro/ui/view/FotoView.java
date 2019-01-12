@@ -61,4 +61,7 @@ public class FotoView extends PolymerTemplate<FotoView.FotoViewModel> {
         return upload;
     }
 
+	public Span getZahlSpan() {
+		return zahlSpan;
+	}
 }

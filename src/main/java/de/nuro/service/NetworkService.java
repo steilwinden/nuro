@@ -60,60 +60,7 @@ public class NetworkService {
 	private static final String MNIST_PNG_FOLDER = NURO_FOLDER + "/mnist_png";
 	private static final String TRAINED_MODEL_ZIP = NURO_FOLDER + "/trained_mnist_model.zip";
 
-	public void simple() throws IOException {
-		/*
-		 * image information 28 * 28 grayscale grayscale implies single channel
-		 */
-		int height = 28;
-		int width = 28;
-		int channels = 1;
-		int rngseed = 123;
-		Random randNumGen = new Random(rngseed);
-		int batchSize = 1;
-		int outputNum = 10;
-
-		// Define the File Paths
-		File trainData = new File(NURO_FOLDER + "/training");
-
-		// Define the FileSplit(PATH, ALLOWED FORMATS,random)
-		FileSplit train = new FileSplit(trainData, NativeImageLoader.ALLOWED_FORMATS, randNumGen);
-
-		// Extract the parent path as the image label
-		ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
-
-		ImageRecordReader recordReader = new ImageRecordReader(height, width, channels, labelMaker);
-
-		// Initialize the record reader
-		// add a listener, to extract the name
-		recordReader.initialize(train);
-
-		// The LogRecordListener will log the path of each image read
-		// used here for information purposes,
-		// If the whole dataset was ingested this would place 60,000
-		// lines in our logs
-		// It will show up in the output with this format
-		// o.d.a.r.l.i.LogRecordListener - Reading /tmp/mnist_png/training/4/36384.png
-		recordReader.setListeners(new LogRecordListener());
-
-		// DataSet Iterator
-		DataSetIterator dataIter = new RecordReaderDataSetIterator(recordReader, batchSize, 1, outputNum);
-
-		// Scale pixel values to 0-1
-		DataNormalization scaler = new ImagePreProcessingScaler(0, 1);
-		scaler.fit(dataIter);
-		dataIter.setPreProcessor(scaler);
-
-		// In production you would loop through all the data
-		// in this example the loop is just through 3
-		// images for demonstration purposes
-		for (int i = 0; i < 1; i++) {
-			DataSet ds = dataIter.next();
-			System.out.println(ds.toString());
-			System.out.println(dataIter.getLabels().toString());
-		}
-	}
-
-	public void guessNumber() throws IOException {
+	public int guessNumber() throws IOException {
 
 		// image information
 		// 28 * 28 grayscale
@@ -206,14 +153,29 @@ public class NetworkService {
 
 		// Create Eval object with 10 possible classes
 		Evaluation eval = new Evaluation(outputNum);
-
+		INDArray output = null;
+		
 		while (testIter.hasNext()) {
 			DataSet next = testIter.next();
-			System.out.println("next: " + next);
-			INDArray output = model.output(next.getFeatures());
+			System.out.println("next: "+next.toString());
+			System.out.println("labels: "+dataIter.getLabels().toString());
+			output = model.output(next.getFeatures());
+			System.out.println("output: "+output);
 			eval.eval(next.getLabels(), output);
 		}
 
 		System.out.println(eval.stats());
+		return maxNumberLabel(output);
+	}
+	
+	private int maxNumberLabel(INDArray output) {
+		
+		double maxNumber = output.maxNumber().doubleValue();
+		for (long i = 0; i < output.toDoubleVector().length; i++) {
+			if (Double.compare(output.getDouble(i),maxNumber) == 0) {
+				return Long.valueOf(i).intValue();
+			}
+		}
+		return -1;
 	}
 }

@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
-import org.datavec.api.records.listener.impl.LogRecordListener;
 import org.datavec.api.split.FileSplit;
 import org.datavec.image.loader.NativeImageLoader;
 import org.datavec.image.recordreader.ImageRecordReader;
@@ -55,127 +54,132 @@ import org.springframework.stereotype.Service;
 @Service
 public class NetworkService {
 
-	public static final String NURO_FOLDER = "/home/dennis/Development/nuro";
-	public static final String TMP_FOLDER = NetworkService.NURO_FOLDER + "/tmp";
-	private static final String MNIST_PNG_FOLDER = NURO_FOLDER + "/mnist_png";
-	private static final String TRAINED_MODEL_ZIP = NURO_FOLDER + "/trained_mnist_model.zip";
+    public static final String NURO_FOLDER = "C:/Development/nuro";
+    public static final String ADHOC_FOLDER = NetworkService.NURO_FOLDER + "/adhoc";
+    private static final String MNIST_PNG_FOLDER = NURO_FOLDER + "/mnist_png";
+    private static final String TRAINED_MODEL_ZIP = NURO_FOLDER + "/trained_mnist_model.zip";
 
-	public int guessNumber() throws IOException {
+    // image information
+    // 28 * 28 grayscale
+    // grayscale implies single channel
+    private int height = 28;
+    private int width = 28;
+    private int channels = 1;
+    private int rngseed = 123;
+    private Random randNumGen = new Random(rngseed);
+    private int batchSize = 128;
+    private int outputNum = 10;
+    private int numEpochs = 15;
 
-		// image information
-		// 28 * 28 grayscale
-		// grayscale implies single channel
-		int height = 28;
-		int width = 28;
-		int channels = 1;
-		int rngseed = 123;
-		Random randNumGen = new Random(rngseed);
-		int batchSize = 128;
-		int outputNum = 10;
-		int numEpochs = 15;
+    public int guessNumber() throws IOException {
 
-		File trainedModelFile = new File(TRAINED_MODEL_ZIP);
+        File trainedModelFile = new File(TRAINED_MODEL_ZIP);
 
-		File trainData = new File(MNIST_PNG_FOLDER + "/training");
+        if (!trainedModelFile.exists()) {
 
-		// Define the FileSplit(PATH, ALLOWED FORMATS,random)
-		FileSplit train = new FileSplit(trainData, NativeImageLoader.ALLOWED_FORMATS, randNumGen);
+            // Build Our Neural Network
+            System.out.println("BUILD MODEL");
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(rngseed)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Nesterovs(0.006, 0.9)).l2(1e-4).list()
+                .layer(0,
+                    new DenseLayer.Builder().nIn(height * width).nOut(100).activation(Activation.RELU)
+                        .weightInit(WeightInit.XAVIER).build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(100)
+                    .nOut(outputNum).activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER).build())
+                .setInputType(InputType.convolutional(height, width, channels)).build();
 
-		// Extract the parent path as the image label
-		ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
+            MultiLayerNetwork model = new MultiLayerNetwork(conf);
+            model.init();
+            model.setListeners(new ScoreIterationListener(10));
 
-		ImageRecordReader recordReader = new ImageRecordReader(height, width, channels, labelMaker);
+            DataSetIterator trainIter = createDataSetIteratorFromFile(new File(MNIST_PNG_FOLDER + "/training"));
 
-		// Initialize the record reader
-		// add a listener, to extract the name
-		recordReader.initialize(train);
-		// recordReader.setListeners(new LogRecordListener());
+            System.out.println("TRAIN MODEL");
+            for (int i = 0; i < numEpochs; i++) {
+                model.fit(trainIter);
+            }
 
-		// DataSet Iterator
-		DataSetIterator dataIter = new RecordReaderDataSetIterator(recordReader, batchSize, 1, outputNum);
+            // boolean save Updater
+            boolean saveUpdater = false;
 
-		// Scale pixel values to 0-1
-		DataNormalization scaler = new ImagePreProcessingScaler(0, 1);
-		scaler.fit(dataIter);
-		dataIter.setPreProcessor(scaler);
+            // ModelSerializer needs modelname, saveUpdater, Location
+            ModelSerializer.writeModel(model, trainedModelFile, saveUpdater);
 
-		if (!trainedModelFile.exists()) {
+            System.out.println("EVALUATE MODEL");
+            DataSetIterator testIter = createDataSetIteratorFromFile(new File(MNIST_PNG_FOLDER + "/testing"));
 
-			// Build Our Neural Network
-			System.out.println("BUILD MODEL");
-			MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(rngseed)
-					.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-					.updater(new Nesterovs(0.006, 0.9)).l2(1e-4).list()
-					.layer(0,
-							new DenseLayer.Builder().nIn(height * width).nOut(100).activation(Activation.RELU)
-									.weightInit(WeightInit.XAVIER).build())
-					.layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(100)
-							.nOut(outputNum).activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER).build())
-					.setInputType(InputType.convolutional(height, width, channels)).build();
+            // Create Eval object with 10 possible classes
+            Evaluation eval = new Evaluation(outputNum);
 
-			MultiLayerNetwork model = new MultiLayerNetwork(conf);
-			model.init();
+            // Evaluate the network
+            while (testIter.hasNext()) {
+                DataSet next = testIter.next();
+                INDArray output = model.output(next.getFeatures());
+                eval.eval(next.getLabels(), output);
+            }
 
-			model.setListeners(new ScoreIterationListener(10));
+            System.out.println(eval.stats());
+        }
 
-			System.out.println("TRAIN MODEL");
-			for (int i = 0; i < numEpochs; i++) {
-				model.fit(dataIter);
-			}
+        System.out.println("LOAD TRAINED MODEL");
+        MultiLayerNetwork model = ModelSerializer.restoreMultiLayerNetwork(trainedModelFile);
 
-			System.out.println("SAVE TRAINED MODEL");
+        DataSetIterator adhocIter = createDataSetIteratorFromFile(new File(ADHOC_FOLDER));
 
-			// boolean save Updater
-			boolean saveUpdater = false;
+        // Create Eval object with 10 possible classes
+        Evaluation eval = new Evaluation(outputNum);
+        INDArray output = null;
 
-			// ModelSerializer needs modelname, saveUpdater, Location
-			ModelSerializer.writeModel(model, trainedModelFile, saveUpdater);
-		}
-		System.out.println("GUESS NUMBER");
+        while (adhocIter.hasNext()) {
+            DataSet next = adhocIter.next();
+            System.out.println("next: " + next.toString());
+            System.out.println("labels: " + adhocIter.getLabels().toString());
+            output = model.output(next.getFeatures());
+            System.out.println("output: " + output);
+            eval.eval(next.getLabels(), output);
+        }
 
-		File testData = new File(TMP_FOLDER);
+        System.out.println(eval.stats());
+        int result = maxNumberLabel(output);
+        System.out.println("result: " + result);
+        return result;
+    }
 
-		// Define the FileSplit(PATH, ALLOWED FORMATS,random)
-		FileSplit test = new FileSplit(testData, NativeImageLoader.ALLOWED_FORMATS, randNumGen);
+    private int maxNumberLabel(final INDArray output) {
 
-		// Build Our Neural Network
-		System.out.println("LOAD TRAINED MODEL");
+        double maxNumber = output.maxNumber().doubleValue();
+        for (long i = 0; i < output.toDoubleVector().length; i++) {
+            if (Double.compare(output.getDouble(i), maxNumber) == 0) {
+                return Long.valueOf(i).intValue();
+            }
+        }
+        return -1;
+    }
 
-		MultiLayerNetwork model = ModelSerializer.restoreMultiLayerNetwork(trainedModelFile);
+    private DataSetIterator createDataSetIteratorFromFile(final File data) throws IOException {
 
-		model.getLabels();
+        // Extract the parent path as the image label
+        ParentPathLabelGenerator labelMaker = new ParentPathLabelGenerator();
 
-		// Test the Loaded Model with the test data
-		recordReader.initialize(test);
-		DataSetIterator testIter = new RecordReaderDataSetIterator(recordReader, batchSize, 1, outputNum);
-		scaler.fit(testIter);
-		testIter.setPreProcessor(scaler);
+        ImageRecordReader recordReader = new ImageRecordReader(height, width, channels, labelMaker);
 
-		// Create Eval object with 10 possible classes
-		Evaluation eval = new Evaluation(outputNum);
-		INDArray output = null;
-		
-		while (testIter.hasNext()) {
-			DataSet next = testIter.next();
-			System.out.println("next: "+next.toString());
-			System.out.println("labels: "+dataIter.getLabels().toString());
-			output = model.output(next.getFeatures());
-			System.out.println("output: "+output);
-			eval.eval(next.getLabels(), output);
-		}
+        // Scale pixel values to 0-1
+        DataNormalization scaler = new ImagePreProcessingScaler(0, 1);
 
-		System.out.println(eval.stats());
-		return maxNumberLabel(output);
-	}
-	
-	private int maxNumberLabel(INDArray output) {
-		
-		double maxNumber = output.maxNumber().doubleValue();
-		for (long i = 0; i < output.toDoubleVector().length; i++) {
-			if (Double.compare(output.getDouble(i),maxNumber) == 0) {
-				return Long.valueOf(i).intValue();
-			}
-		}
-		return -1;
-	}
+        FileSplit fileSplit = new FileSplit(data, NativeImageLoader.ALLOWED_FORMATS, randNumGen);
+
+        // Initialize the record reader
+        // add a listener, to extract the name
+        recordReader.initialize(fileSplit);
+        // recordReader.setListeners(new LogRecordListener());
+
+        // DataSet Iterator
+        DataSetIterator dataSetIterator = new RecordReaderDataSetIterator(recordReader, batchSize, 1, outputNum);
+
+        scaler.fit(dataSetIterator);
+        dataSetIterator.setPreProcessor(scaler);
+
+        return dataSetIterator;
+    }
 }

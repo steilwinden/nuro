@@ -43,6 +43,8 @@ public class FotoPresenter {
         view.getUpload().setReceiver(buffer);
         view.getUpload().setAcceptedFileTypes("image/jpeg", "image/jpg");
 
+        view.getUpload().addStartedListener(e -> view.getZahlSpan().setText("Ergebnis:"));
+
         view.getUpload().addSucceededListener(event -> {
             String attachmentName = event.getFileName();
             String mimeType = event.getMIMEType();
@@ -56,11 +58,11 @@ public class FotoPresenter {
 
                 BufferedImage inputImage = ImageIO.read(bis);
                 BufferedImage bwImage = imageService.toBlackWhiteInverted(inputImage);
-                File tmpFile = new File(NetworkService.TMP_FOLDER + "/foto.png");
-                ImageIO.write(bwImage, "png", tmpFile);
+                File adhocFile = new File(NetworkService.ADHOC_FOLDER + "/foto.png");
+                ImageIO.write(bwImage, "png", adhocFile);
 
                 int result = networkService.guessNumber();
-                view.getZahlSpan().setText("Ergebnis: "+result);
+                view.getZahlSpan().setText("Ergebnis: " + result);
             } catch (Exception e) {
                 e.printStackTrace();
             }

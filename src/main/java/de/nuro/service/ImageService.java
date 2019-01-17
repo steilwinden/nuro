@@ -119,8 +119,9 @@ public class ImageService {
 
                 int grayLevel = (r + g + b) / 3;
                 int grayLevelInverted = 255 - grayLevel;
-                int blackWhiteLevelInverted = grayLevelInverted < 127 ? 0 : 255;
-                int blackWhiteInverted = (blackWhiteLevelInverted << 16) + (blackWhiteLevelInverted << 8) + blackWhiteLevelInverted;
+                int blackWhiteLevelInverted = grayLevelInverted < 100 ? 0 : 255;
+                int blackWhiteInverted =
+                    (blackWhiteLevelInverted << 16) + (blackWhiteLevelInverted << 8) + blackWhiteLevelInverted;
                 image.setRGB(x, y, blackWhiteInverted);
             }
         }

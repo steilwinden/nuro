@@ -28,6 +28,7 @@ import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.springframework.stereotype.Service;
 
 /**
@@ -70,6 +71,7 @@ public class NetworkService {
     private int batchSize = 128;
     private int outputNum = 10;
     private int numEpochs = 15;
+    double rate = 0.0015; // learning rate
 
     public int guessNumber() throws IOException {
 
@@ -79,15 +81,8 @@ public class NetworkService {
 
             // Build Our Neural Network
             System.out.println("BUILD MODEL");
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(rngseed)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(new Nesterovs(0.006, 0.9)).l2(1e-4).list()
-                .layer(0,
-                    new DenseLayer.Builder().nIn(height * width).nOut(100).activation(Activation.RELU)
-                        .weightInit(WeightInit.XAVIER).build())
-                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(100)
-                    .nOut(outputNum).activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER).build())
-                .setInputType(InputType.convolutional(height, width, channels)).build();
+
+            MultiLayerConfiguration conf = buildModelConfTwoLayer();
 
             MultiLayerNetwork model = new MultiLayerNetwork(conf);
             model.init();
@@ -181,5 +176,43 @@ public class NetworkService {
         dataSetIterator.setPreProcessor(scaler);
 
         return dataSetIterator;
+    }
+
+    private MultiLayerConfiguration buildModelConfSimple() {
+
+        return new NeuralNetConfiguration.Builder().seed(rngseed)
+            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+            .updater(new Nesterovs(0.006, 0.9)).l2(1e-4).list()
+            .layer(0,
+                new DenseLayer.Builder().nIn(height * width).nOut(100).activation(Activation.RELU)
+                    .weightInit(WeightInit.XAVIER).build())
+            .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(100)
+                .nOut(outputNum).activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER).build())
+            .setInputType(InputType.convolutional(height, width, channels)).build();
+    }
+
+    private MultiLayerConfiguration buildModelConfTwoLayer() {
+
+        return new NeuralNetConfiguration.Builder()
+            .seed(rngseed) //include a random seed for reproducibility
+            .activation(Activation.RELU)
+            .weightInit(WeightInit.XAVIER)
+            .updater(new Nesterovs(rate, 0.98))
+            .l2(rate * 0.005) // regularize learning model
+            .list()
+            .layer(0, new DenseLayer.Builder() //create the first input layer.
+                .nIn(height * width)
+                .nOut(500)
+                .build())
+            .layer(1, new DenseLayer.Builder() //create the second input layer
+                .nIn(500)
+                .nOut(100)
+                .build())
+            .layer(2, new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD) //create hidden layer
+                .activation(Activation.SOFTMAX)
+                .nIn(100)
+                .nOut(outputNum)
+                .build())
+            .setInputType(InputType.convolutional(height, width, channels)).build();
     }
 }

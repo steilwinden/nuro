@@ -59,6 +59,7 @@ public class FotoPresenter {
                 BufferedImage inputImage = ImageIO.read(bis);
                 BufferedImage bwImage = imageService.toBlackWhiteInverted(inputImage);
                 File adhocFile = new File(NetworkService.ADHOC_FOLDER + "/foto.png");
+                adhocFile.createNewFile();
                 ImageIO.write(bwImage, "png", adhocFile);
 
                 int result = networkService.guessNumber();

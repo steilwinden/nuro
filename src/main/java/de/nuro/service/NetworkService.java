@@ -9,7 +9,6 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.image.loader.NativeImageLoader;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -27,7 +26,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.learning.config.Nesterovs;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.springframework.stereotype.Service;
 
@@ -176,19 +174,6 @@ public class NetworkService {
         dataSetIterator.setPreProcessor(scaler);
 
         return dataSetIterator;
-    }
-
-    private MultiLayerConfiguration buildModelConfSimple() {
-
-        return new NeuralNetConfiguration.Builder().seed(rngseed)
-            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-            .updater(new Nesterovs(0.006, 0.9)).l2(1e-4).list()
-            .layer(0,
-                new DenseLayer.Builder().nIn(height * width).nOut(100).activation(Activation.RELU)
-                    .weightInit(WeightInit.XAVIER).build())
-            .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nIn(100)
-                .nOut(outputNum).activation(Activation.SOFTMAX).weightInit(WeightInit.XAVIER).build())
-            .setInputType(InputType.convolutional(height, width, channels)).build();
     }
 
     private MultiLayerConfiguration buildModelConfTwoLayer() {

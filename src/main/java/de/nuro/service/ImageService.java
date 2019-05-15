@@ -143,7 +143,8 @@ public class ImageService {
 
             final int frequencyThreshold = 2;
             int key = maxFrequencyKey;
-            while (greyLevelToFrequencyMap.get(key) > frequencyThreshold) {
+            while (key > 0 && (!greyLevelToFrequencyMap.containsKey(key)
+                || greyLevelToFrequencyMap.get(key) > frequencyThreshold)) {
                 key--;
             }
             threshold = key;

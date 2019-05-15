@@ -141,7 +141,7 @@ public class ImageService {
             System.out.println(String.format("maxFrequencyKey: %d", maxFrequencyKey));
             System.out.println(String.format("frequency: %d", greyLevelToFrequencyMap.get(maxFrequencyKey)));
 
-            final int frequencyThreshold = 1;
+            final int frequencyThreshold = 2;
             int key = maxFrequencyKey;
             while (greyLevelToFrequencyMap.get(key) > frequencyThreshold) {
                 key--;

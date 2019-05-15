@@ -141,7 +141,7 @@ public class ImageService {
             System.out.println(String.format("maxFrequencyKey: %d", maxFrequencyKey));
             System.out.println(String.format("frequency: %d", greyLevelToFrequencyMap.get(maxFrequencyKey)));
 
-            final int frequencyThreshold = 20;
+            final int frequencyThreshold = 1;
             int key = maxFrequencyKey;
             while (greyLevelToFrequencyMap.get(key) > frequencyThreshold) {
                 key--;
@@ -190,8 +190,7 @@ public class ImageService {
                 int b = rgb & 0xFF;
 
                 int grayLevel = (r + g + b) / 3;
-                int grayLevelInverted = 255 - grayLevel;
-                int blackWhiteLevelInverted = grayLevelInverted < thresholdBlack ? 0 : grayLevelInverted;
+                int blackWhiteLevelInverted = grayLevel < thresholdBlack ? 255 : 0;
                 int blackWhiteInverted =
                     (blackWhiteLevelInverted << 16) + (blackWhiteLevelInverted << 8) + blackWhiteLevelInverted;
                 image.setRGB(x, y, blackWhiteInverted);

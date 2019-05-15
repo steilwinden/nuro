@@ -53,9 +53,9 @@ public class FotoPresenter {
 
                 byte[] bytes = IOUtils.toByteArray(buffer.getInputStream(attachmentName));
                 byte[] bytesRotated = imageService.rotateImage(bytes, mimeType);
-                // TODO: Feature 2 umsetzen (auf Quadrat verschieben und skalieren)
                 byte[] bytesRotatedAndResized = imageService.resizeImage(bytesRotated);
                 int threshold = imageService.calcThreshold(bytesRotatedAndResized);
+                // TODO: Feature 2 umsetzen (auf Quadrat verschieben und skalieren)
                 ByteArrayInputStream bis = new ByteArrayInputStream(bytesRotatedAndResized);
 
                 BufferedImage inputImage = ImageIO.read(bis);

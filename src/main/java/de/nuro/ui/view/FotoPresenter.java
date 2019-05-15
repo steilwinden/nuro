@@ -1,18 +1,21 @@
 package de.nuro.ui.view;
 
-import com.vaadin.flow.component.upload.receivers.MultiFileMemoryBuffer;
-import com.vaadin.flow.spring.annotation.SpringComponent;
-import de.nuro.service.ImageService;
-import de.nuro.service.NetworkService;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+
+import javax.imageio.ImageIO;
+
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.File;
+import com.vaadin.flow.component.upload.receivers.MultiFileMemoryBuffer;
+import com.vaadin.flow.spring.annotation.SpringComponent;
+
+import de.nuro.service.ImageService;
+import de.nuro.service.NetworkService;
 
 @SpringComponent
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -51,10 +54,12 @@ public class FotoPresenter {
                 byte[] bytes = IOUtils.toByteArray(buffer.getInputStream(attachmentName));
                 byte[] bytesRotated = imageService.rotateImage(bytes, mimeType);
                 byte[] bytesRotatedAndResized = imageService.resizeImage(bytesRotated);
+                int threshold = imageService.calcThreshold(bytesRotatedAndResized);
+                // TODO: Feature 2 umsetzen (auf Quadrat verschieben und skalieren)
                 ByteArrayInputStream bis = new ByteArrayInputStream(bytesRotatedAndResized);
 
                 BufferedImage inputImage = ImageIO.read(bis);
-                BufferedImage bwImage = imageService.toBlackWhiteInverted(inputImage);
+                BufferedImage bwImage = imageService.toBlackWhiteInverted(inputImage, threshold);
                 File adhocFolder = new File(NetworkService.ADHOC_FOLDER);
                 if (!adhocFolder.exists()) {
                     adhocFolder.mkdirs();

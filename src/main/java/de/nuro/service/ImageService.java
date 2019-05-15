@@ -5,6 +5,10 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
 
@@ -108,9 +112,75 @@ public class ImageService {
         }
     }
 
-    public BufferedImage toBlackWhiteInverted(final BufferedImage image) {
+    public int calcThreshold(final byte[] bytes) throws IOException {
 
-        int thresholdBlack = 90;
+        int threshold = -1;
+
+        try (ByteArrayInputStream bisClone = new ByteArrayInputStream(bytes)) {
+
+            BufferedImage greyImage = ImageIO.read(bisClone);
+
+            Map<Integer, Integer> greyLevelToFrequencyMap = new HashMap<>();
+
+            int[] intArray = new int[3];
+            for (int y = 0; y < greyImage.getHeight(); y++) {
+                for (int x = 0; x < greyImage.getWidth(); x++) {
+                    greyImage.getData().getPixel(x, y, intArray);
+                    int meanLevel = Arrays.stream(intArray).sum() / intArray.length;
+                    int greyLevel = meanLevel;
+                    int frequency = 1;
+                    if (greyLevelToFrequencyMap.containsKey(greyLevel)) {
+                        frequency = greyLevelToFrequencyMap.get(greyLevel) + 1;
+                    }
+                    greyLevelToFrequencyMap.put(greyLevel, frequency);
+                }
+            }
+
+            int maxFrequencyKey = maxFrequencyKeyInHistogram(greyLevelToFrequencyMap);
+
+            System.out.println(String.format("maxFrequencyKey: %d", maxFrequencyKey));
+            System.out.println(String.format("frequency: %d", greyLevelToFrequencyMap.get(maxFrequencyKey)));
+
+            final int frequencyThreshold = 20;
+            int key = maxFrequencyKey;
+            while (greyLevelToFrequencyMap.get(key) > frequencyThreshold) {
+                key--;
+            }
+            threshold = key;
+
+            System.out.println(String.format("threshold: %d", threshold));
+            printHistorgram(greyLevelToFrequencyMap);
+        }
+
+        return threshold;
+    }
+
+    private static int maxFrequencyKeyInHistogram(final Map<Integer, Integer> greyLevelToFrequencyMap) {
+        int maxFrequency = 0;
+        int maxFrequencyKey = 0;
+        for (int e : greyLevelToFrequencyMap.keySet().stream().sorted().collect(Collectors.toList())) {
+            Integer frequency = greyLevelToFrequencyMap.get(e);
+            if (frequency > maxFrequency) {
+                maxFrequency = frequency;
+                maxFrequencyKey = e;
+            }
+        }
+        return maxFrequencyKey;
+    }
+
+    private static void printHistorgram(final Map<Integer, Integer> greyLevelToFrequencyMap) {
+        for (int j = 0; j < 256; j++) {
+            String occurences = "";
+            if (greyLevelToFrequencyMap.containsKey(j)) {
+                for (int i = 0; i < greyLevelToFrequencyMap.get(j); i++) {
+                    occurences += "+";
+                }
+            }
+            System.out.println(String.format("key=%d: %s", j, occurences));
+        }
+    }
+
+    public BufferedImage toBlackWhiteInverted(final BufferedImage image, final int thresholdBlack) {
 
         for (int x = 0; x < image.getWidth(); ++x) {
             for (int y = 0; y < image.getHeight(); ++y) {

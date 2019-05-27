@@ -115,24 +115,9 @@ public class ImageService {
 
         final int frequencyThreshold = 2;
 
-        try (ByteArrayInputStream bisClone = new ByteArrayInputStream(bytes)) {
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes)) {
 
-            BufferedImage image = ImageIO.read(bisClone);
-
-            Map<Integer, Integer> grayLevelToFrequencyMap = new HashMap<>();
-
-            for (int y = 0; y < image.getHeight(); y++) {
-                for (int x = 0; x < image.getWidth(); x++) {
-
-                    int grayLevel = calculateGrayLevel(image, x, y);
-
-                    int frequency = 1;
-                    if (grayLevelToFrequencyMap.containsKey(grayLevel)) {
-                        frequency = grayLevelToFrequencyMap.get(grayLevel) + 1;
-                    }
-                    grayLevelToFrequencyMap.put(grayLevel, frequency);
-                }
-            }
+            Map<Integer, Integer> grayLevelToFrequencyMap = calculateGrayLevelToFrequencyMap(bis);
 
             int maxFrequencyKey = maxFrequencyKeyInHistogram(grayLevelToFrequencyMap);
             System.out.println(String.format("maxFrequencyKey: %d", maxFrequencyKey));
@@ -148,6 +133,27 @@ public class ImageService {
             printHistorgram(grayLevelToFrequencyMap);
             return threshold;
         }
+    }
+
+    private Map<Integer, Integer> calculateGrayLevelToFrequencyMap(final ByteArrayInputStream bis) throws IOException {
+
+        BufferedImage image = ImageIO.read(bis);
+
+        Map<Integer, Integer> grayLevelToFrequencyMap = new HashMap<>();
+
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+
+                int grayLevel = calculateGrayLevel(image, x, y);
+
+                int frequency = 1;
+                if (grayLevelToFrequencyMap.containsKey(grayLevel)) {
+                    frequency = grayLevelToFrequencyMap.get(grayLevel) + 1;
+                }
+                grayLevelToFrequencyMap.put(grayLevel, frequency);
+            }
+        }
+        return grayLevelToFrequencyMap;
     }
 
     private static int maxFrequencyKeyInHistogram(final Map<Integer, Integer> greyLevelToFrequencyMap) {
@@ -168,14 +174,14 @@ public class ImageService {
 
     private static void printHistorgram(final Map<Integer, Integer> greyLevelToFrequencyMap) {
 
-        for (int i = 0; i < 256; i++) {
+        for (int grayLevel = 0; grayLevel < 256; grayLevel++) {
             String occurences = "";
-            if (greyLevelToFrequencyMap.containsKey(i)) {
-                for (int j = 0; j < greyLevelToFrequencyMap.get(i); j++) {
+            if (greyLevelToFrequencyMap.containsKey(grayLevel)) {
+                for (int i = 0; i < greyLevelToFrequencyMap.get(grayLevel); i++) {
                     occurences += "+";
                 }
             }
-            System.out.println(String.format("key=%d: %s", i, occurences));
+            System.out.println(String.format("grayLevel=%d: %s", grayLevel, occurences));
         }
     }
 
@@ -205,4 +211,5 @@ public class ImageService {
         int grayLevel = (r + g + b) / 3;
         return grayLevel;
     }
+
 }

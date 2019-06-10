@@ -6,6 +6,8 @@ import java.io.File;
 
 import javax.imageio.ImageIO;
 
+import de.nuro.service.ClusterService;
+import de.nuro.service.BlackWhiteService;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -23,12 +25,17 @@ public class FotoPresenter {
 
     private FotoView view;
     private ImageService imageService;
+    private BlackWhiteService blackWhiteService;
+    private ClusterService clusterService;
     private NetworkService networkService;
 
     @Autowired
-    public FotoPresenter(final ImageService imageService, final NetworkService networkService) {
+    public FotoPresenter(final ImageService imageService, final BlackWhiteService blackWhiteService,
+                         final ClusterService clusterService, final NetworkService networkService) {
         super();
         this.imageService = imageService;
+        this.blackWhiteService = blackWhiteService;
+        this.clusterService = clusterService;
         this.networkService = networkService;
     }
 
@@ -54,12 +61,12 @@ public class FotoPresenter {
                 byte[] bytes = IOUtils.toByteArray(buffer.getInputStream(attachmentName));
                 byte[] bytesRotated = imageService.rotateImage(bytes, mimeType);
                 byte[] bytesRotatedAndResized = imageService.resizeImage(bytesRotated);
-                int threshold = imageService.calcThreshold(bytesRotatedAndResized);
+                int threshold = blackWhiteService.calcThreshold(bytesRotatedAndResized);
                 // TODO: Feature 2 umsetzen (auf Quadrat verschieben und skalieren)
                 ByteArrayInputStream bis = new ByteArrayInputStream(bytesRotatedAndResized);
 
                 BufferedImage inputImage = ImageIO.read(bis);
-                BufferedImage bwImage = imageService.toBlackWhiteInverted(inputImage, threshold);
+                BufferedImage bwImage = blackWhiteService.toBlackWhiteInverted(inputImage, threshold);
                 File adhocFolder = new File(NetworkService.ADHOC_FOLDER);
                 if (!adhocFolder.exists()) {
                     adhocFolder.mkdirs();

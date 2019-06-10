@@ -53,7 +53,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class NetworkService {
 
-    public static final String NURO_FOLDER = "C:/Development/nuro";
+    public static final String NURO_FOLDER = "/home/dennis/Development/nuro";
     public static final String ADHOC_FOLDER = NetworkService.NURO_FOLDER + "/adhoc";
     private static final String MNIST_PNG_FOLDER = NURO_FOLDER + "/mnist_png";
     private static final String TRAINED_MODEL_ZIP = NURO_FOLDER + "/trained_mnist_model.zip";

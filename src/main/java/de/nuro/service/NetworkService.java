@@ -126,14 +126,14 @@ public class NetworkService {
 
         while (adhocIter.hasNext()) {
             DataSet next = adhocIter.next();
-            System.out.println("next: " + next.toString());
-            System.out.println("labels: " + adhocIter.getLabels().toString());
+//            System.out.println("next: " + next.toString());
+//            System.out.println("labels: " + adhocIter.getLabels().toString());
             output = model.output(next.getFeatures());
             System.out.println("output: " + output);
             eval.eval(next.getLabels(), output);
         }
 
-        System.out.println(eval.stats());
+//        System.out.println(eval.stats());
         int result = maxNumberLabel(output);
         System.out.println("result: " + result);
         return result;

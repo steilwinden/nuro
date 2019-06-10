@@ -67,13 +67,14 @@ public class FotoPresenter {
 
                 BufferedImage inputImage = ImageIO.read(bis);
                 BufferedImage bwImage = blackWhiteService.toBlackWhiteInverted(inputImage, threshold);
+                BufferedImage clusteredImage = clusterService.cropImageByLargestCluster(bwImage);
                 File adhocFolder = new File(NetworkService.ADHOC_FOLDER);
                 if (!adhocFolder.exists()) {
                     adhocFolder.mkdirs();
                 }
                 File adhocFile = new File(NetworkService.ADHOC_FOLDER + "/foto.png");
                 adhocFile.createNewFile();
-                ImageIO.write(bwImage, "png", adhocFile);
+                ImageIO.write(clusteredImage, "png", adhocFile);
 
                 int result = networkService.guessNumber();
                 view.getZahlSpan().setText("Ergebnis: " + result);

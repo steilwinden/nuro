@@ -13,10 +13,10 @@ import java.util.stream.Collectors;
 @Service
 public class BlackWhiteService {
 
-    public int calcThreshold(final byte[] bytes) throws IOException {
+    // Sobald der THRESHOLD_FREQUENCY <= 2 ist, nehmen wir an, dass der grayLevel zur Zahl gehört.
+    private static final int THRESHOLD_FREQUENCY = 2;
 
-        // sobald der frequencyThreshold <= 2 ist, nehmen wir an, dass der grayLevel zur Zahl gehört.
-        final int frequencyThreshold = 2;
+    public int calcThreshold(final byte[] bytes) throws IOException {
 
         try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes)) {
 
@@ -28,12 +28,12 @@ public class BlackWhiteService {
 
             int thresholdKey = maxFrequencyKey;
             while (thresholdKey > 0 && (!grayLevelToFrequencyMap.containsKey(thresholdKey)
-                    || grayLevelToFrequencyMap.get(thresholdKey) > frequencyThreshold)) {
+                    || grayLevelToFrequencyMap.get(thresholdKey) > THRESHOLD_FREQUENCY)) {
                 thresholdKey--;
             }
 
             System.out.println(String.format("threshold: %d", thresholdKey));
-            printHistorgram(grayLevelToFrequencyMap);
+//            printHistorgram(grayLevelToFrequencyMap);
             return thresholdKey;
         }
     }
@@ -78,13 +78,13 @@ public class BlackWhiteService {
     private static void printHistorgram(final Map<Integer, Integer> greyLevelToFrequencyMap) {
 
         for (int grayLevel = 0; grayLevel < 256; grayLevel++) {
-            String occurences = "";
+            StringBuilder occurences = new StringBuilder();
             if (greyLevelToFrequencyMap.containsKey(grayLevel)) {
                 for (int i = 0; i < greyLevelToFrequencyMap.get(grayLevel); i++) {
-                    occurences += "+";
+                    occurences.append("+");
                 }
             }
-            System.out.println(String.format("grayLevel=%d: %s", grayLevel, occurences));
+            System.out.println(String.format("grayLevel=%d: %s", grayLevel, occurences.toString()));
         }
     }
 
@@ -111,7 +111,6 @@ public class BlackWhiteService {
         int g = rgb >> 8 & 0xFF;
         int b = rgb & 0xFF;
 
-        int grayLevel = (r + g + b) / 3;
-        return grayLevel;
+        return (r + g + b) / 3;
     }
 }

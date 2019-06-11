@@ -13,7 +13,7 @@ public class Cluster {
         points.add(point);
     }
 
-    public void addAllPoints(Cluster cluster) {
+    public void addCluster(Cluster cluster) {
         points.addAll(cluster.getPoints());
     }
 

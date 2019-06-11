@@ -6,13 +6,14 @@ import org.springframework.stereotype.Service;
 
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
 public class ClusterService {
 
     private static final int RGB_WHITE = -1;
+    private static final int NOF_PIXEL_FRAME = 10;
 
     public BufferedImage cropImageByLargestCluster(BufferedImage image) {
 
@@ -32,6 +33,7 @@ public class ClusterService {
             }
         }
         print(clusterList, imageWidth, imageHeight);
+        calculateFrame(clusterList, imageWidth, imageHeight);
         return image;
     }
 
@@ -63,7 +65,6 @@ public class ClusterService {
             Point neighbourPoint = new Point(x - 1, y);
             mergePointIntoClusterList(point, neighbourPoint, clusterList);
         }
-        System.out.println("clusterList: "+ Arrays.toString(clusterList.toArray()));
     }
 
     private void mergePointIntoClusterList(Point point, Point neighbourPoint, List<Cluster> clusterList) {
@@ -77,7 +78,7 @@ public class ClusterService {
         Cluster neighbourCluster = findPointInClusterList(neighbourPoint, clusterList);
 
         if (neighbourCluster != null && !cluster.contains(neighbourPoint)) {
-            cluster.addAllPoints(neighbourCluster);
+            cluster.addCluster(neighbourCluster);
             clusterList.remove(neighbourCluster);
         }
     }
@@ -113,5 +114,48 @@ public class ClusterService {
             }
             System.out.println("cluster="+print);
         }
+    }
+
+    private void calculateFrame(List<Cluster> clusterList, int imageWidth, int imageHeight) {
+
+        Cluster largestCluster = clusterList.stream().max(Comparator.comparing(e -> e.getPoints().size())).get();
+        int x1 = imageWidth;
+        int x2 = 0;
+        int y1 = imageHeight;
+        int y2 = 0;
+
+        for (Point point : largestCluster.getPoints()) {
+            if (point.getX() < x1) {
+                x1 = point.getX();
+            }
+            if (point.getX() > x2) {
+                x2 = point.getX();
+            }
+            if (point.getY() < y1) {
+                y1 = point.getY();
+            }
+            if (point.getY() > y2) {
+                y2 = point.getY();
+            }
+        }
+
+        int halfLength = Math.round(Math.max(x2 - x1, y2 - y1) / 2);
+        int centerX = Math.round((x2 - x1) / 2) + x1;
+        int centerY = Math.round((y2 - y1) / 2) + y1;
+
+        int startX = centerX - halfLength - NOF_PIXEL_FRAME;
+        int endX = centerX + halfLength + NOF_PIXEL_FRAME;
+        int startY = centerY - halfLength - NOF_PIXEL_FRAME;
+        int endY = centerY + halfLength + NOF_PIXEL_FRAME;
+
+        Point startPoint = new Point(startX, startY);
+        Point endPoint = new Point(endX, endY);
+        if (startX < 0 || endX > imageWidth || startY < 0 || endY > imageHeight) {
+            throw new IllegalArgumentException("Die Zahl befindet sich zu nah am Rand des Bildes. "
+                    +"startPoint="+startPoint+" endPoint="+endPoint);
+        }
+
+        System.out.println("startPoint: "+startPoint);
+        System.out.println("endPoint: "+endPoint);
     }
 }

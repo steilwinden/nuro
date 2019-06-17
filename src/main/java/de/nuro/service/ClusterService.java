@@ -13,7 +13,7 @@ import java.util.List;
 public class ClusterService {
 
     private static final int RGB_WHITE = -1;
-    private static final int NOF_PIXEL_FRAME = 10;
+    private static final int NOF_PIXEL_FRAME = 2;
 
     public BufferedImage cropImageByLargestCluster(BufferedImage image) {
 
@@ -33,8 +33,8 @@ public class ClusterService {
             }
         }
         print(clusterList, imageWidth, imageHeight);
-        calculateFrame(clusterList, imageWidth, imageHeight);
-        return image;
+        Cluster largestCluster = clusterList.stream().max(Comparator.comparing(e -> e.getPoints().size())).get();
+        return cropImageByCluster(image, largestCluster, imageWidth, imageHeight);
     }
 
     /**
@@ -112,19 +112,18 @@ public class ClusterService {
                     print.append(" ");
                 }
             }
-            System.out.println("cluster="+print);
+            System.out.println(String.format("cluster(%02d)=%s",y,print));
         }
     }
 
-    private void calculateFrame(List<Cluster> clusterList, int imageWidth, int imageHeight) {
+    private BufferedImage cropImageByCluster(BufferedImage image, Cluster cluster, int imageWidth, int imageHeight) {
 
-        Cluster largestCluster = clusterList.stream().max(Comparator.comparing(e -> e.getPoints().size())).get();
         int x1 = imageWidth;
         int x2 = 0;
         int y1 = imageHeight;
         int y2 = 0;
 
-        for (Point point : largestCluster.getPoints()) {
+        for (Point point : cluster.getPoints()) {
             if (point.getX() < x1) {
                 x1 = point.getX();
             }
@@ -143,19 +142,40 @@ public class ClusterService {
         int centerX = Math.round((x2 - x1) / 2) + x1;
         int centerY = Math.round((y2 - y1) / 2) + y1;
 
-        int startX = centerX - halfLength - NOF_PIXEL_FRAME;
-        int endX = centerX + halfLength + NOF_PIXEL_FRAME;
-        int startY = centerY - halfLength - NOF_PIXEL_FRAME;
-        int endY = centerY + halfLength + NOF_PIXEL_FRAME;
+        int startX = centerX - halfLength;
+        int startY = centerY - halfLength;
 
-        Point startPoint = new Point(startX, startY);
-        Point endPoint = new Point(endX, endY);
-        if (startX < 0 || endX > imageWidth || startY < 0 || endY > imageHeight) {
+        if (startX < 0 || startX + 2*halfLength > imageWidth || startY < 0 || startY + 2*halfLength > imageHeight) {
             throw new IllegalArgumentException("Die Zahl befindet sich zu nah am Rand des Bildes. "
-                    +"startPoint="+startPoint+" endPoint="+endPoint);
+                    +"startX="+startX+" startY="+startY);
         }
 
-        System.out.println("startPoint: "+startPoint);
-        System.out.println("endPoint: "+endPoint);
+        System.out.println("startX: "+startX);
+        System.out.println("startY: "+startY);
+        System.out.println("halfLength: "+halfLength);
+
+        BufferedImage subImage = image.getSubimage(startX, startY,
+                2*halfLength + NOF_PIXEL_FRAME, 2*halfLength + NOF_PIXEL_FRAME);
+        print(subImage);
+        return subImage;
+    }
+
+    private void print(BufferedImage image) {
+
+        for (int y = 0; y < image.getHeight(); y++) {
+
+            StringBuilder print = new StringBuilder();
+            for (int x = 0; x < image.getWidth(); x++) {
+
+                int rgb = image.getRGB(x, y);
+                if (rgb == RGB_WHITE) {
+                    print.append("0");
+                }
+                else {
+                    print.append(" ");
+                }
+            }
+            System.out.println(String.format("subimage(%02d)=%s", y, print));
+        }
     }
 }

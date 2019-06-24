@@ -2,9 +2,7 @@ package de.nuro.service;
 
 import org.springframework.stereotype.Service;
 
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,31 +14,26 @@ public class BlackWhiteService {
     // Sobald der THRESHOLD_FREQUENCY <= 2 ist, nehmen wir an, dass der grayLevel zur Zahl gehört.
     private static final int THRESHOLD_FREQUENCY = 2;
 
-    public int calcThreshold(final byte[] bytes) throws IOException {
+    public int calcThreshold(BufferedImage image) throws IOException {
 
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes)) {
+        Map<Integer, Integer> grayLevelToFrequencyMap = calculateGrayLevelToFrequencyMap(image);
 
-            Map<Integer, Integer> grayLevelToFrequencyMap = calculateGrayLevelToFrequencyMap(bis);
+        int maxFrequencyKey = maxFrequencyKeyInHistogram(grayLevelToFrequencyMap);
+        System.out.println(String.format("maxFrequencyKey: %d", maxFrequencyKey));
+        System.out.println(String.format("frequency: %d", grayLevelToFrequencyMap.get(maxFrequencyKey)));
 
-            int maxFrequencyKey = maxFrequencyKeyInHistogram(grayLevelToFrequencyMap);
-            System.out.println(String.format("maxFrequencyKey: %d", maxFrequencyKey));
-            System.out.println(String.format("frequency: %d", grayLevelToFrequencyMap.get(maxFrequencyKey)));
-
-            int thresholdKey = maxFrequencyKey;
-            while (thresholdKey > 0 && (!grayLevelToFrequencyMap.containsKey(thresholdKey)
-                    || grayLevelToFrequencyMap.get(thresholdKey) > THRESHOLD_FREQUENCY)) {
-                thresholdKey--;
-            }
-
-            System.out.println(String.format("threshold: %d", thresholdKey));
-//            printHistorgram(grayLevelToFrequencyMap);
-            return thresholdKey;
+        int thresholdKey = maxFrequencyKey;
+        while (thresholdKey > 0 && (!grayLevelToFrequencyMap.containsKey(thresholdKey)
+                || grayLevelToFrequencyMap.get(thresholdKey) > THRESHOLD_FREQUENCY)) {
+            thresholdKey--;
         }
+
+        System.out.println(String.format("threshold: %d", thresholdKey));
+//            printHistorgram(grayLevelToFrequencyMap);
+        return thresholdKey;
     }
 
-    private Map<Integer, Integer> calculateGrayLevelToFrequencyMap(final ByteArrayInputStream bis) throws IOException {
-
-        BufferedImage image = ImageIO.read(bis);
+    private Map<Integer, Integer> calculateGrayLevelToFrequencyMap(BufferedImage image) {
 
         Map<Integer, Integer> grayLevelToFrequencyMap = new HashMap<>();
 

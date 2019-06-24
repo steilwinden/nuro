@@ -14,7 +14,6 @@ import org.springframework.context.annotation.Scope;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 
 @SpringComponent
@@ -58,30 +57,29 @@ public class FotoPresenter {
 
                 byte[] bytes = IOUtils.toByteArray(buffer.getInputStream(attachmentName));
                 byte[] bytesRotated = imageService.rotateImage(bytes, mimeType);
-                byte[] bytesRotatedAndResized = imageService.resizeImage(bytesRotated);
-                int threshold = blackWhiteService.calcThreshold(bytesRotatedAndResized);
-                // TODO: Feature 2 umsetzen (auf Quadrat verschieben und skalieren)
-                ByteArrayInputStream bis = new ByteArrayInputStream(bytesRotatedAndResized);
 
-                BufferedImage inputImage = ImageIO.read(bis);
-                BufferedImage bwImage = blackWhiteService.toBlackWhiteInverted(inputImage, threshold);
-                BufferedImage croppedImage = clusterService.cropImageByLargestCluster(bwImage);
+                try (ByteArrayInputStream bis = new ByteArrayInputStream(bytesRotated)) {
+                    BufferedImage imageRotated = ImageIO.read(bis);
+                    BufferedImage imageRotatedAndResized = imageService.resizeImage(imageRotated);
 
-                // TODO: this is really bad code...
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ImageIO.write(croppedImage, "png", baos);
-                byte[] bytesCropped = baos.toByteArray();
-                byte[] bytesCroppedAndResized = imageService.resizeImage(bytesCropped);
-                bis = new ByteArrayInputStream(bytesCroppedAndResized);
-                BufferedImage croppedAndResizedImage = ImageIO.read(bis);
 
-                File adhocFolder = new File(NetworkService.ADHOC_FOLDER);
-                if (!adhocFolder.exists()) {
-                    adhocFolder.mkdirs();
+                    int threshold = blackWhiteService.calcThreshold(imageRotatedAndResized);
+                    // TODO: Feature 2 umsetzen (auf Quadrat verschieben und skalieren)
+                    BufferedImage imageBw = blackWhiteService.toBlackWhiteInverted(imageRotatedAndResized, threshold);
+                    BufferedImage imageCropped = clusterService.cropImageByLargestCluster(imageBw);
+
+
+                    // TODO: this is really bad code...
+                    BufferedImage imageCroppedAndResized = imageService.resizeImage(imageCropped);
+
+                    File adhocFolder = new File(NetworkService.ADHOC_FOLDER);
+                    if (!adhocFolder.exists()) {
+                            adhocFolder.mkdirs();
+                        }
+                    File adhocFile = new File(NetworkService.ADHOC_FOLDER + "/foto.png");
+                    adhocFile.createNewFile();
+                    ImageIO.write(imageCroppedAndResized, "png", adhocFile);
                 }
-                File adhocFile = new File(NetworkService.ADHOC_FOLDER + "/foto.png");
-                adhocFile.createNewFile();
-                ImageIO.write(croppedAndResizedImage, "png", adhocFile);
 
                 int result = networkService.guessNumber();
                 view.getZahlSpan().setText("Ergebnis: " + result);

@@ -1,25 +1,20 @@
 package de.nuro.service;
 
-import java.awt.Image;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import javax.imageio.ImageIO;
-
-import org.imgscalr.Scalr;
-import org.imgscalr.Scalr.Rotation;
-import org.springframework.stereotype.Service;
-
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.lang.CompoundException;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.exif.ExifDirectoryBase;
 import com.drew.metadata.exif.ExifIFD0Directory;
+import org.imgscalr.Scalr;
+import org.imgscalr.Scalr.Rotation;
+import org.springframework.stereotype.Service;
+
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 @Service
 public class ImageService {
@@ -27,19 +22,20 @@ public class ImageService {
     private static final int widthLimit = 28;
     private static final int heightLimit = 28;
 
-    public byte[] resizeImage(final byte[] bytes) throws IOException {
+    public BufferedImage resizeImage(BufferedImage sourceImage) throws IOException {
 
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-
-            BufferedImage sourceImage = ImageIO.read(bis);
+//        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+//            ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+//
+//            BufferedImage sourceImage = ImageIO.read(bis);
             Image thumbnail = sourceImage.getScaledInstance(widthLimit, heightLimit, Image.SCALE_SMOOTH);
             BufferedImage bufferedThumbnail =
                 new BufferedImage(thumbnail.getWidth(null), thumbnail.getHeight(null), BufferedImage.TYPE_INT_RGB);
             bufferedThumbnail.getGraphics().drawImage(thumbnail, 0, 0, null);
-            ImageIO.write(bufferedThumbnail, "png", baos);
-            return baos.toByteArray();
-        }
+
+            return bufferedThumbnail;
+//            ImageIO.write(bufferedThumbnail, "png", baos);
+//            return baos.toByteArray();
     }
 
     /**

@@ -74,8 +74,8 @@ public class FotoPresenter {
 
                     File adhocFolder = new File(NetworkService.ADHOC_FOLDER);
                     if (!adhocFolder.exists()) {
-                            adhocFolder.mkdirs();
-                        }
+                        adhocFolder.mkdirs();
+                    }
                     File adhocFile = new File(NetworkService.ADHOC_FOLDER + "/foto.png");
                     adhocFile.createNewFile();
                     ImageIO.write(imageCroppedAndResized, "png", adhocFile);

@@ -22,18 +22,22 @@ public class ImageService {
     private static final int widthLimit = 28;
     private static final int heightLimit = 28;
 
+    private int calculateHeight(int width, int height) {
+        return Math.round(widthLimit * height / (float) width);
+    }
+
     public BufferedImage resizeImage(BufferedImage sourceImage) throws IOException {
 
 //        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
 //            ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 //
 //            BufferedImage sourceImage = ImageIO.read(bis);
-            Image thumbnail = sourceImage.getScaledInstance(widthLimit, heightLimit, Image.SCALE_SMOOTH);
-            BufferedImage bufferedThumbnail =
+        Image thumbnail = sourceImage.getScaledInstance(widthLimit, heightLimit, Image.SCALE_SMOOTH);
+        BufferedImage bufferedThumbnail =
                 new BufferedImage(thumbnail.getWidth(null), thumbnail.getHeight(null), BufferedImage.TYPE_INT_RGB);
-            bufferedThumbnail.getGraphics().drawImage(thumbnail, 0, 0, null);
+        bufferedThumbnail.getGraphics().drawImage(thumbnail, 0, 0, null);
 
-            return bufferedThumbnail;
+        return bufferedThumbnail;
 //            ImageIO.write(bufferedThumbnail, "png", baos);
 //            return baos.toByteArray();
     }
@@ -44,8 +48,8 @@ public class ImageService {
     public byte[] rotateImage(final byte[] bytes, final String mimeType) throws IOException, CompoundException {
 
         try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-            ByteArrayInputStream bisClone = new ByteArrayInputStream(bytes);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+             ByteArrayInputStream bisClone = new ByteArrayInputStream(bytes);
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 
             BufferedImage image = ImageIO.read(bis);
             Metadata metadata = ImageMetadataReader.readMetadata(bisClone);
@@ -56,36 +60,36 @@ public class ImageService {
                 orientation = exifIFD0Directory.getInt(ExifDirectoryBase.TAG_ORIENTATION);
             } catch (Exception e) {
                 System.out.println(
-                    "No EXIF information found for image. MimeType=" + mimeType + ". Image rotation will be skipped.");
+                        "No EXIF information found for image. MimeType=" + mimeType + ". Image rotation will be skipped.");
             }
 
             switch (orientation) {
-                case 1 :
+                case 1:
                     break;
-                case 2 : // Flip X
+                case 2: // Flip X
                     image = Scalr.rotate(image, Rotation.FLIP_HORZ);
                     break;
-                case 3 : // PI rotation
+                case 3: // PI rotation
                     image = Scalr.rotate(image, Rotation.CW_180);
                     break;
-                case 4 : // Flip Y
+                case 4: // Flip Y
                     image = Scalr.rotate(image, Rotation.FLIP_VERT);
                     break;
-                case 5 : // - PI/2 and Flip X
+                case 5: // - PI/2 and Flip X
                     image = Scalr.rotate(image, Rotation.CW_90);
                     image = Scalr.rotate(image, Rotation.FLIP_HORZ);
                     break;
-                case 6 : // -PI/2 and -width
+                case 6: // -PI/2 and -width
                     image = Scalr.rotate(image, Rotation.CW_90);
                     break;
-                case 7 : // PI/2 and Flip
+                case 7: // PI/2 and Flip
                     image = Scalr.rotate(image, Rotation.CW_90);
                     image = Scalr.rotate(image, Rotation.FLIP_VERT);
                     break;
-                case 8 : // PI / 2
+                case 8: // PI / 2
                     image = Scalr.rotate(image, Rotation.CW_270);
                     break;
-                default :
+                default:
                     break;
             }
             // ---- End orientation handling ----

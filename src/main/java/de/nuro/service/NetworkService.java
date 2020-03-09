@@ -53,7 +53,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class NetworkService {
 
-    public static final String NURO_FOLDER = "C:/Development/nuro";
+    public static final String NURO_FOLDER = "/home/dennis/Development/nuro";
     public static final String ADHOC_FOLDER = NetworkService.NURO_FOLDER + "/adhoc";
     private static final String MNIST_PNG_FOLDER = NURO_FOLDER + "/mnist_png";
     private static final String TRAINED_MODEL_ZIP = NURO_FOLDER + "/trained_mnist_model.zip";
@@ -126,14 +126,14 @@ public class NetworkService {
 
         while (adhocIter.hasNext()) {
             DataSet next = adhocIter.next();
-            System.out.println("next: " + next.toString());
-            System.out.println("labels: " + adhocIter.getLabels().toString());
+//            System.out.println("next: " + next.toString());
+//            System.out.println("labels: " + adhocIter.getLabels().toString());
             output = model.output(next.getFeatures());
             System.out.println("output: " + output);
             eval.eval(next.getLabels(), output);
         }
 
-        System.out.println(eval.stats());
+//        System.out.println(eval.stats());
         int result = maxNumberLabel(output);
         System.out.println("result: " + result);
         return result;

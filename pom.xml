@@ -17,7 +17,7 @@
 
 	<properties>
 		<java.version>1.8</java.version>
-		<vaadin.version>11.0.1</vaadin.version>
+		<vaadin.version>14.6.2</vaadin.version>
         <metadata-extractor.version>2.11.0</metadata-extractor.version>
         <imgscalr.version>4.2</imgscalr.version>
         <dl4j.version>1.0.0-beta3</dl4j.version>
